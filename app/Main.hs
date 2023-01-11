@@ -167,7 +167,7 @@ execute config state tape = do
             Just transitions -> do
                 case find (\t -> (read t) == (current tape)) transitions of
                     Just transition -> do
-                        putStrLn (" \x1b[1;94m↓\x1b[0m " ++ (show transition))
+                        putStrLn ("\x1b[1;94m↓\x1b[0m " ++ (show transition))
                         let writtenTape = (Tape (left tape) (write transition) (right tape))
                         execute config (to_state transition) (moveTape (action transition) (blank config) writtenTape)
                     Nothing -> do
