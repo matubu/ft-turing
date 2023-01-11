@@ -3,6 +3,7 @@
 module Main (main) where
 
 import Prelude hiding       (read, repeat, lookup)
+import Data.List            (find)
 import Data.Map hiding      (drop, take)
 import Data.Aeson           (FromJSON, decode)
 import GHC.Generics         (Generic)
@@ -33,8 +34,8 @@ loadConfig jsonfile = do
     json <- Data.ByteString.Lazy.readFile jsonfile
     return (decode json)
 
-validateConfig :: Config -> Maybe String
-validateConfig config = do
+validate :: String -> Config -> Maybe String
+validate input config = do
     -- Validate alphabet
     if (length (alphabet config)) == 0
         then Just "alphabet is empty"
@@ -46,7 +47,15 @@ validateConfig config = do
         then Just "blank should be only one char"
     else if not ((blank config) `elem` (alphabet config))
         then Just "blank should be in alphabet"
-    
+
+    -- Validate input
+    else if (length input) == 0
+        then Just "input is empty"
+    else if not (all (\c -> [c] `elem` (alphabet config)) input)
+        then Just "input should be in alphabet"
+    else if ((head (blank config)) `elem` input)
+        then Just "input should not contain blank"
+
     -- Validate states
     else if (length (states config)) == 0
         then Just "states is empty"
@@ -87,6 +96,30 @@ validateConfig config = do
     
     else Nothing
 
+padLeft :: Int -> String -> String -> String
+padLeft n padding s
+    | len < n = repeat (n - len) padding ++ s
+    | otherwise = s
+    where len = length s
+
+padRight :: Int -> String -> String -> String
+padRight n padding s
+    | len < n = s ++ repeat (n - len) padding
+    | otherwise = s
+    where len = length s
+
+limitLeft :: Int -> String -> String
+limitLeft n s
+    | len > n = drop (len-n) s
+    | otherwise = s
+    where len = length s
+
+limitRight :: Int -> String -> String
+limitRight n s
+    | len > n = take n s
+    | otherwise = s
+    where len = length s
+
 data Tape = Tape {
     left :: String,
     current :: String,
@@ -96,53 +129,53 @@ data Tape = Tape {
 newTape :: String -> Tape
 newTape input = Tape "" (take 1 input) (drop 1 input)
 
+rDrop :: Int -> String -> String
+rDrop n xs = reverse (drop n (reverse xs))
+
+rTake :: Int -> String -> String
+rTake n xs = reverse (take n (reverse xs))
+
+moveTape :: String -> String -> Tape -> Tape
+moveTape "RIGHT" blank tape = Tape ((left tape) ++ (current tape)) (padRight 1 blank (take 1 (right tape))) (drop 1 (right tape))
+moveTape "LEFT" blank tape = Tape (rDrop 1 (left tape)) (padLeft 1 blank (rTake 1 (left tape))) ((current tape) ++ (right tape))
+
+tapeToString :: Tape -> Int -> String -> String
+tapeToString tape n blank = do
+    "["
+        ++ "\x1b[0;90m" ++ (limitLeft n (padLeft n blank (left tape)))
+        ++ "\x1b[1;93m" ++ (current tape)
+        ++ "\x1b[0;90m" ++ (limitRight n (padRight n blank (right tape)))
+        ++ "\x1b[0m]"
+
 repeat :: Int -> String -> String
 repeat 1 s = s
 repeat i s = repeat (i-1) s ++ s
 
-autoPadRight :: Int -> String -> String -> String
-autoPadRight n padding s
-    | len > n = take n s
-    | len < n = s ++ repeat (n - len) padding
-    where len = length s
-
-autoPadLeft :: Int -> String -> String -> String
-autoPadLeft n padding s
-    | len > n = drop (len-n) s
-    | len < n = repeat (n - len) padding ++ s
-    where len = length s
+putError :: String -> IO ()
+putError msg = do
+    putStrLn ("\x1b[1;91merror\x1b[0m: " ++ msg)
 
 execute :: Config -> String -> Tape -> IO ()
 execute config state tape = do
-    putStrLn ("["
-        ++ "\x1b[0;90m" ++ (autoPadLeft 10 (blank config) (left tape))
-        ++ "\x1b[1;93m" ++ (current tape)
-        ++ "\x1b[0;90m" ++ (autoPadRight 10 (blank config) (right tape))
-        ++ "\x1b[0m]")
+    putStrLn ((tapeToString tape 15 (blank config)) ++ " \x1b[1;91m" ++ state ++ "\x1b[0m")
 
-    -- if state `elem` (finals config) then return ()
-    -- return if in final state
-
-    case lookup state (transitions config) of
-        Just transitions -> do
-            -- case find (\t -> (read t) == (take 1 input)) transitions of
-            --     Just transition -> do
-            --         -- putStrLn "transition: "
-            --         -- putStrLn "read: "
-            --         -- putStrLn "to_state: "
-            --         -- putStrLn "write: "
-            --         -- putStrLn "action: "
-            --         -- execute config (to_state transition) (drop 1 input)
-            --     Nothing -> do
-            --         putStrLn "error: no transition found"
-            --         putStrLn "transitions: "
-            print transitions
-            putStrLn "ok"
-        Nothing -> do
-            putStrLn "error: invalid state"
+    -- check if in final state
+    if state `elem` (finals config) then do
+        putStrLn "+++ final state reached +++"
+    else do
+        case lookup state (transitions config) of
+            Just transitions -> do
+                case find (\t -> (read t) == (current tape)) transitions of
+                    Just transition -> do
+                        putStrLn (" \x1b[1;94m↓\x1b[0m " ++ (show transition))
+                        let writtenTape = (Tape (left tape) (write transition) (right tape))
+                        execute config (to_state transition) (moveTape (action transition) (blank config) writtenTape)
+                    Nothing -> do
+                        putError "blocked (no transition found)"
+            Nothing -> do
+                putError "blocked (no transition found)"
 
 -- TODO check for help flag
--- TODO infinite tape with index
 main :: IO ()
 main = do
     args <- getArgs
@@ -162,7 +195,7 @@ main = do
         config <- loadConfig jsonfile
         case config of
             Just json -> do
-                case validateConfig json of
-                    Just err -> putStrLn ("error: " ++ err)
+                case validate input json of
+                    Just err -> putError err
                     Nothing  -> execute json (initial json) (newTape input)
-            Nothing   -> putStrLn "error: parsing json config"
+            Nothing   -> putError "parsing json config"
