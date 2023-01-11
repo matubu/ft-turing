@@ -175,12 +175,11 @@ execute config state tape = do
             Nothing -> do
                 putError "blocked (no transition found)"
 
--- TODO check for help flag
 main :: IO ()
 main = do
     args <- getArgs
 
-    if length args /= 2 then do
+    if (length args /= 2) || (any (\arg -> arg == "-h" || arg == "--help") args) then do
         putStrLn "usage: ft_turing [-h] jsonfile input"
         putStrLn ""
         putStrLn "positional arguments:"
