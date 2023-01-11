@@ -2,8 +2,8 @@
 
 module Main (main) where
 
-import Prelude hiding       (read, lookup)
-import Data.Map
+import Prelude hiding       (read, repeat, lookup)
+import Data.Map hiding      (drop, take)
 import Data.Aeson           (FromJSON, decode)
 import GHC.Generics         (Generic)
 import Data.ByteString.Lazy (readFile)
@@ -87,10 +87,38 @@ validateConfig config = do
     
     else Nothing
 
--- arguments = (config state tape)
-execute :: Config -> String -> String -> IO ()
-execute config state input = do
-    putStrLn "state: "
+data Tape = Tape {
+    left :: String,
+    current :: String,
+    right :: String
+} deriving (Show)
+
+newTape :: String -> Tape
+newTape input = Tape "" (take 1 input) (drop 1 input)
+
+repeat :: Int -> String -> String
+repeat 1 s = s
+repeat i s = repeat (i-1) s ++ s
+
+autoPadRight :: Int -> String -> String -> String
+autoPadRight n padding s
+    | len > n = take n s
+    | len < n = s ++ repeat (n - len) padding
+    where len = length s
+
+autoPadLeft :: Int -> String -> String -> String
+autoPadLeft n padding s
+    | len > n = drop (len-n) s
+    | len < n = repeat (n - len) padding ++ s
+    where len = length s
+
+execute :: Config -> String -> Tape -> IO ()
+execute config state tape = do
+    putStrLn ("["
+        ++ "\x1b[0;90m" ++ (autoPadLeft 10 (blank config) (left tape))
+        ++ "\x1b[1;93m" ++ (current tape)
+        ++ "\x1b[0;90m" ++ (autoPadRight 10 (blank config) (right tape))
+        ++ "\x1b[0m]")
 
     -- if state `elem` (finals config) then return ()
     -- return if in final state
@@ -136,5 +164,5 @@ main = do
             Just json -> do
                 case validateConfig json of
                     Just err -> putStrLn ("error: " ++ err)
-                    Nothing  -> execute json (initial json) input
+                    Nothing  -> execute json (initial json) (newTape input)
             Nothing   -> putStrLn "error: parsing json config"
