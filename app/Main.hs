@@ -136,15 +136,16 @@ rTake :: Int -> String -> String
 rTake n xs = reverse (take n (reverse xs))
 
 moveTape :: String -> String -> Tape -> Tape
-moveTape "RIGHT" blank tape = Tape ((left tape) ++ (current tape)) (padRight 1 blank (take 1 (right tape))) (drop 1 (right tape))
-moveTape "LEFT" blank tape = Tape (rDrop 1 (left tape)) (padLeft 1 blank (rTake 1 (left tape))) ((current tape) ++ (right tape))
+moveTape "RIGHT" pad tape = Tape ((left tape) ++ (current tape)) (padRight 1 pad (take 1 (right tape))) (drop 1 (right tape))
+moveTape "LEFT" pad tape = Tape (rDrop 1 (left tape)) (padLeft 1 pad (rTake 1 (left tape))) ((current tape) ++ (right tape))
+moveTape _ _ tape = tape
 
 tapeToString :: Tape -> Int -> String -> String
-tapeToString tape n blank = do
+tapeToString tape n pad = do
     "["
-        ++ "\x1b[0;90m" ++ (limitLeft n (padLeft n blank (left tape)))
+        ++ "\x1b[0;90m" ++ (limitLeft n (padLeft n pad (left tape)))
         ++ "\x1b[1;93m" ++ (current tape)
-        ++ "\x1b[0;90m" ++ (limitRight n (padRight n blank (right tape)))
+        ++ "\x1b[0;90m" ++ (limitRight n (padRight n pad (right tape)))
         ++ "\x1b[0m]"
 
 repeat :: Int -> String -> String
@@ -157,17 +158,17 @@ putError msg = do
 
 execute :: Config -> String -> Tape -> IO ()
 execute config state tape = do
-    putStrLn ((tapeToString tape 15 (blank config)) ++ " \x1b[1;91m" ++ state ++ "\x1b[0m")
+    putStrLn ("\x1b[1;93m*\x1b[0m " ++ (tapeToString tape 15 (blank config)) ++ " \x1b[1;91m" ++ state ++ "\x1b[0m\n")
 
     -- check if in final state
     if state `elem` (finals config) then do
         putStrLn "+++ final state reached +++"
     else do
         case lookup state (transitions config) of
-            Just transitions -> do
-                case find (\t -> (read t) == (current tape)) transitions of
+            Just matched_transitions -> do
+                case find (\t -> (read t) == (current tape)) matched_transitions of
                     Just transition -> do
-                        putStrLn ("\x1b[1;94m↓\x1b[0m " ++ (show transition))
+                        putStrLn ("\x1b[1;94m⬇\x1b[0m  " ++ (show transition) ++ "\n")
                         let writtenTape = (Tape (left tape) (write transition) (right tape))
                         execute config (to_state transition) (moveTape (action transition) (blank config) writtenTape)
                     Nothing -> do
