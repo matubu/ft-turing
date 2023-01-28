@@ -2,11 +2,14 @@
 
 allowed alph: 1+.
 states names: a, b, c
-pointer: x
+pointer: @
 
-[baa][sss][tttttt][i...]
-b=blank
+[123123][aa] | [i...]
 a=alphabet
-s=states
-t=transition (READ, TO_STATE, WRITE)
+t=transition (TO_STATE, WRITE)
 i=input
+
+config_[aa]([to][wr])*4_[state]o
+
+goto_to_ptr_[state][write]
+search_conf_[state][read]
