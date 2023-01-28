@@ -148,6 +148,10 @@ tapeToString tape n pad = do
         ++ "\x1b[0;90m" ++ (limitRight n (padRight n pad (right tape)))
         ++ "\x1b[0m]"
 
+fullTapeToString :: Tape -> String
+fullTapeToString tape = do
+    "[[\x1b[90m" ++ (left tape) ++ "\x1b[1;91m" ++ (current tape) ++ "\x1b[0;90m" ++ (right tape) ++ "\x1b[0m]]"
+
 repeat :: Int -> String -> String
 repeat 1 s = s
 repeat i s = repeat (i-1) s ++ s
@@ -158,25 +162,25 @@ putError msg = do
 
 execute :: Config -> String -> Tape -> IO ()
 execute config state tape = do
-    putStrLn ("\x1b[1;93m*\x1b[0m " ++ (tapeToString tape 15 (blank config)) ++ " \x1b[1;91m" ++ state ++ "\x1b[0m\n")
+    putStrLn ((tapeToString tape 15 (blank config)) ++ " \x1b[1;91m" ++ state ++ "\x1b[0m")
 
     -- check if in final state
     if state `elem` (finals config) then do
-        putStrLn "+++ final state reached +++"
-        putStrLn ""
-        putStrLn ("[[\x1b[90m" ++ (left tape) ++ "\x1b[1;91m" ++ (current tape) ++ "\x1b[0;90m" ++ (right tape) ++ "\x1b[0m]]")
+        putStrLn "\n+++ final state reached +++\n"
+        putStrLn (fullTapeToString tape)
     else do
         case lookup state (transitions config) of
             Just matched_transitions -> do
                 case find (\t -> (read t) == (current tape)) matched_transitions of
                     Just transition -> do
-                        putStrLn ("\x1b[1;94m⬇\x1b[0m  " ++ (show transition) ++ "\n")
                         let writtenTape = (Tape (left tape) (write transition) (right tape))
                         execute config (to_state transition) (moveTape (action transition) (blank config) writtenTape)
                     Nothing -> do
-                        putError "blocked (no transition found)"
+                        putError "\n++ blocked (no transition found) ++\n"
+                        putStrLn (fullTapeToString tape)
             Nothing -> do
-                putError "blocked (no transition found)"
+                putError "\n++ blocked (no transition found) ++\n"
+                putStrLn (fullTapeToString tape)
 
 main :: IO ()
 main = do
