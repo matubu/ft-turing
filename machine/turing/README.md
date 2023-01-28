@@ -1,15 +1,21 @@
 # Encoding
 
-allowed alph: 1+.
-states names: a, b, c
+blank = .
+allowed alph: 01+.
+states names: a, b, c, d
 pointer: @
 
-[123123][aa] | [i...]
-a=alphabet
-t=transition (TO_STATE, WRITE)
-i=input
+[...transitions] | [...input]
+transition = [WRITE] [TO_STATE] [CURRENT_STATE] [READ] :
 
-config_[aa]([to][wr])*4_[state]o
+fake blank for transition config = _
+start state = a
+end state = d
 
-goto_to_ptr_[state][write]
-search_conf_[state][read]
+# Unary addition
+
+_ba1:_da_:_da+:1bb1:1db_:1db+:|1+1
+
+```bash
+deno run main.js > turing.json && ft-turing turing.json "_ba1:_da_:_da+:1bb1:1db_:1db+:|1+1"
+```

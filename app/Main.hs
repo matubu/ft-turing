@@ -163,6 +163,8 @@ execute config state tape = do
     -- check if in final state
     if state `elem` (finals config) then do
         putStrLn "+++ final state reached +++"
+        putStrLn ""
+        putStrLn ("[[\x1b[90m" ++ (left tape) ++ "\x1b[1;91m" ++ (current tape) ++ "\x1b[0;90m" ++ (right tape) ++ "\x1b[0m]]")
     else do
         case lookup state (transitions config) of
             Just matched_transitions -> do
