@@ -8,7 +8,7 @@ const real_char = (c) => {
 	return c == VIRTUAL_BLANK ? BLANK : c;
 };
 
-const ALLOWED_ALPH = [BLANK, '0', '1', '+'];
+const ALLOWED_ALPH = [BLANK, '0', '+', 'y', 'n'];
 const VIRTUAL_ALPH = ALLOWED_ALPH.map(virtual_char);
 
 const SPECIAL_ALPH = ['@', '|', ':', '_'];

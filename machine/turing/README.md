@@ -1,7 +1,7 @@
 # Encoding
 
 blank = .
-allowed alph: 01+.
+allowed alph: 0+.yn
 states names: a, b, c, d
 pointer: @
 
@@ -19,3 +19,7 @@ _ba1:_da_:_da+:1bb1:1db_:1db+:|1+1
 ```bash
 deno run main.js > turing.json && ft-turing turing.json "_ba1:_da_:_da+:1bb1:1db_:1db+:|1+1"
 ```
+
+## 02n
+
+_ba0:yda_:_ab0:ndb_:|00
