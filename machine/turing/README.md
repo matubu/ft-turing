@@ -3,7 +3,7 @@
 ## Encoding
 
 blank = .
-allowed alph: 0+.yn
+allowed alph: .01+yn
 states names: a, b, c, d
 pointer: @
 
