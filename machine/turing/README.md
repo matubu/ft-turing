@@ -1,4 +1,6 @@
-# Encoding
+# Turing machine
+
+## Encoding
 
 blank = .
 allowed alph: 0+.yn
@@ -12,14 +14,20 @@ fake blank for transition config = _
 start state = a
 end state = d
 
-# Unary addition
-
-_ba1:_da_:_da+:1bb1:1db_:1db+:|1+1
+## Generate turing machine
 
 ```bash
-deno run main.js > turing.json && ft-turing turing.json "_ba1:_da_:_da+:1bb1:1db_:1db+:|1+1"
+deno run main.js > turing.json
+```
+
+## Unary addition
+
+```bash
+ft-turing turing.json "_ba1:_da_:_da+:1bb1:1db_:1db+:|1+1"
 ```
 
 ## 02n
 
-_ba0:yda_:_ab0:ndb_:|00
+```bash
+ft-turing turing.json "_ba0:yda_:_ab0:ndb_:|00"
+```
